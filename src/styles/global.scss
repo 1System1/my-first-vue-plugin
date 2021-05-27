@@ -1,0 +1,91 @@
+// 基于sass的web主题切换: https://www.jianshu.com/p/880945299f4a
+// 语法参考sass官网 https://www.sass.hk/docs/
+// 辨析Sass中的Map和List: https://www.sass.hk/skill/sass131.html
+@import "./themes/default";
+@import "./themes/theme-one";
+$pl-default-themes: (
+        "default": $default-theme,
+        "theme1"  : $theme-one,
+);
+
+// 这个pl-var的作用是根据传入的变量名从当前全局主题 $theme-map中获取变量，而这个当前全局主题变量 $theme-map是动态变化的
+@function pl-var($key) {
+  @if (map_has_key($theme-map, $key)) {
+    @return map-get($theme-map, $key);
+  } @else {
+    @return map-get($default-theme, $key);
+  }
+}
+
+// 这个pl-themeify的作用是生成主题代码，参数有两个:
+//第一个 $theme表示新增加的主题变量，格式与 $default-theme一致，
+// 第二个 $append-default-theme为true表示传入的 $theme将与 $pl-default-themes合并生成样式，为false的话，则只生成 $theme的主题样式；
+
+@mixin pl-themeify($theme,$append-default-theme:true) {
+
+  @if (length(map-keys($theme))>0 and $append-default-theme) {
+    $pl-themes: map-merge($pl-default-themes, $theme) !global;
+  } @else {
+    $pl-themes: $theme !global;
+  }
+
+  @each $theme-name, $theme-map in $pl-themes {
+    $theme-map: $theme-map !global;
+
+    $color-primary: pl-var(color-primary) !global;
+    $layout-head-height:pl-var(layout-head-height) !global;
+    $left-menu-width:pl-var(left-menu-width) !global;
+
+
+    @if (str_length($theme-name) >0) {
+      .pl-theme-#{$theme-name} {
+        //font-family: $p-font-family;
+        @content;
+      }
+    } @else {
+      html {
+        @content;
+      }
+    }
+  }
+}
+
+
+//用于开发者自定义组件主题化的mixin
+@mixin pl-theme-wrap($theme) {
+  @include pl-themeify($theme, true) {
+    @content;
+  }
+}
+
+// 用于生成组件库内置组件适配开发者自定义主题样式的mixin
+@mixin pl-use-theme($theme:()) {
+  @include pl-themeify($theme, false) {
+    //@include component-mixin;
+  }
+}
+
+// 用于快速生成颜色的mixin
+//@mixin pl-colors($prefix) {
+//  @each $key in (primary, success, warn, error, info, disabled) {
+//    $key: $key !global;
+//    $pl-color: pl-var(color-#{$key}) !global;
+//    $value: pl-var(color-#{$key}) !global;
+//    $pl-color-deep: pl-var(color-#{$key}-deep) !global;
+//    $pl-color-light: pl-var(color-#{$key}-light) !global;
+//    @if (str_length($prefix)>0) {
+//      &.#{$prefix}-color-#{$key} {
+//        @content;
+//      }
+//    } @else {
+//      @content;
+//    }
+//  }
+//}
+
+
+@mixin themeify {
+  @include pl-theme-wrap($pl-default-themes) {
+    @content;
+  }
+}
